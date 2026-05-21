@@ -1,0 +1,74 @@
+# ~/Dotfiles/matugen/config.toml
+
+[config]
+reload_apps = true
+source_color_index = 0
+
+[templates.hyprland]
+input_path = '/home/snow/Dotfiles/matugen/templates/hyprland-colors.conf'
+output_path = '/home/snow/.cache/skwd-wall/hyprland-colors.conf'
+
+[templates.kitty]
+input_path = '/home/snow/Dotfiles/matugen/templates/kitty-colors.conf'
+output_path = '/home/snow/.cache/skwd-wall/colors-kitty.conf'
+
+[templates.fuzzel]
+input_path = '/home/snow/Dotfiles/matugen/templates/fuzzel-colors.ini'
+output_path = '/home/snow/.cache/skwd-wall/fuzzel-colors.ini'
+
+[templates.skwd]
+input_path = '/home/snow/Dotfiles/matugen/templates/skwd-colors.json'
+output_path = '/home/snow/.cache/skwd-wall/colors.json'
+
+[templates.caelestia]
+input_path = '/home/snow/Dotfiles/matugen/templates/caelestia-scheme.json'
+output_path = '/home/snow/.local/state/caelestia/scheme.json'
+
+[templates.swaync]
+input_path = '/home/snow/Dotfiles/matugen/templates/swaync.css'
+output_path = '/home/snow/.cache/skwd-wall/swaync.css'
+
+[templates.steam]
+input_path = '/home/snow/Dotfiles/matugen/templates/steam-millennium.css'
+output_path = '/home/snow/.local/share/Steam/steamui/skins/Material-Theme/css/main/colors/matugen.css'
+
+[templates.steam_transparency]
+input_path = '/home/snow/Dotfiles/matugen/templates/steam-transparency.css'
+output_path = '/home/snow/.local/share/Steam/steamui/skins/Material-Theme/css/main/transparency.css'
+
+[templates.steam_experimental]
+input_path = '/home/snow/Dotfiles/matugen/templates/steam-experimental-header.css'
+output_path = '/home/snow/.local/share/Steam/steamui/skins/Material-Theme/experimental-import.css'
+
+[templates.vencord]
+input_path = '/home/snow/Dotfiles/matugen/templates/vencord.css'
+output_path = '/home/snow/.config/Vencord/themes/matugen.theme.css'
+
+[templates.brave]
+input_path = '/home/snow/Dotfiles/matugen/templates/brave.css'
+output_path = '/home/snow/.config/BraveSoftware/Brave-browser/current-theme.css'
+
+[templates.gtk3]
+input_path = '/home/snow/Dotfiles/matugen/templates/gtk.css'
+output_path = '/home/snow/.config/gtk-3.0/gtk.css'
+
+[templates.gtk4]
+input_path = '/home/snow/Dotfiles/matugen/templates/gtk.css'
+output_path = '/home/snow/.config/gtk-4.0/gtk.css'
+
+[templates.spicetify]
+input_path = '/home/snow/Dotfiles/matugen/templates/spicetify.ini'
+output_path = '/home/snow/.config/spicetify/Themes/Matugen/color.ini'
+
+[templates.starship]
+input_path = '/home/snow/Dotfiles/matugen/templates/starship.toml'
+output_path = '/home/snow/.config/starship.toml'
+
+[templates.opencode]
+input_path = '/home/snow/Dotfiles/matugen/templates/opencode.json'
+output_path = '/home/snow/.config/opencode/themes/matugen.json'
+reload = true
+
+[post_processing]
+command = "/home/snow/Dotfiles/scripts/wall-sync.sh"
+run_on_change = true
