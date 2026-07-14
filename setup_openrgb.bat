@@ -31,7 +31,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$principal = New-ScheduledTaskPrincipal -UserId '%USERDOMAIN%\\%USERNAME%' -RunLevel Highest -LogonType S4U; " ^
   "$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable; " ^
   "Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force; " ^
-  "echo. & echo Task '$taskName' created. Starting now...; " ^
+  "echo 'Task created. Starting server now...'; " ^
   "Start-ScheduledTask -TaskName $taskName"
 
 echo.
