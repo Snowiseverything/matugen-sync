@@ -5,7 +5,6 @@ from dataclasses import dataclass, field, asdict
 
 @dataclass
 class Config:
-    openrgb_cli: str = "openrgb"
     openrgb_enabled: bool = True
     openrgb_devices: list[dict] | None = None
     mad68_enabled: bool = True

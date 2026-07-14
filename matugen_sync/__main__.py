@@ -9,7 +9,7 @@ from pathlib import Path
 from .colors import extract_colors
 from .config import Config
 from .templates import render_templates
-from .rgb import sync_openrgb, sync_mad68, list_devices
+from .rgb import sync_openrgb, sync_mad68
 from . import govee
 
 logger = logging.getLogger("matugen-sync")
@@ -113,7 +113,7 @@ def _run_sync(image_path: str, args, cfg, app_outputs):
 
     if not args.no_rgb:
         if cfg.openrgb_enabled:
-            sync_openrgb(rgb_color, cfg.openrgb_cli, cfg.openrgb_devices)
+            sync_openrgb(rgb_color, cfg.openrgb_devices)
         if cfg.mad68_enabled:
             sync_mad68(rgb_color)
 
@@ -134,6 +134,7 @@ def main():
     parser.add_argument("--list-paths", action="store_true", help="Show configured output paths")
     parser.add_argument("--list-devices", action="store_true", help="List detected OpenRGB devices")
     parser.add_argument("--list-govee", action="store_true", help="Discover Govee devices via Home Assistant")
+    parser.add_argument("--setup-openrgb", action="store_true", help="Install OpenRGB 1.0rc3 and create scheduled task (run as admin)")
 
     args = parser.parse_args()
     setup_logging(args.verbose)
@@ -143,14 +144,23 @@ def main():
 
     if args.list_devices:
         print("OpenRGB devices:")
-        devs = list_devices(cfg.openrgb_cli)
-        if devs:
-            for d in devs:
-                print(f"  {d['id']}: {d['name']}")
-            print("\nAdd to config.json under 'openrgb_devices':")
-            print(json.dumps([{"id": int(d["id"]), "name": d["name"]} for d in devs], indent=2))
-        else:
-            print("  (none detected)")
+        try:
+            from openrgb import OpenRGBClient
+            cli = OpenRGBClient()
+            if cli.devices:
+                for d in cli.devices:
+                    print(f"  {d.id}: {d.name} (type={d.type})")
+                    for z in d.zones:
+                        print(f"    Zone: {z.name}, LEDs={len(z.colors)}")
+                print("\nAdd to config.json under 'openrgb_devices':")
+                devs_json = [{"id": d.id, "name": d.name} for d in cli.devices]
+                print(json.dumps(devs_json, indent=2))
+            else:
+                print("  (none detected)")
+            cli.disconnect()
+        except Exception as e:
+            print(f"  Error: {e}")
+            print("  Make sure OpenRGB server is running (--server flag as admin)")
         return
 
     if args.list_govee:
@@ -178,6 +188,21 @@ def main():
 
     if args.install_templates:
         install_templates()
+        return
+
+    if args.setup_openrgb:
+        try:
+            import subprocess
+            setup_script = Path(__file__).resolve().parent.parent / "setup_openrgb.bat"
+            if setup_script.exists():
+                logger.info("Launching setup script (admin prompt will appear)...")
+                subprocess.run(["powershell", "-NoProfile", "-Command",
+                    f"Start-Process -Verb RunAs -FilePath '{setup_script}'"],
+                    timeout=5)
+            else:
+                logger.error("setup_openrgb.bat not found at %s", setup_script)
+        except Exception as e:
+            logger.info("Manual setup required. Run 'setup_openrgb.bat' as admin.")
         return
 
     if args.watch:

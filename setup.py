@@ -8,6 +8,8 @@ setup(
     install_requires=[
         "jinja2>=3.0.0",
         "hidapi>=0.12.0",
+        "openrgb-python>=0.3.0",
+        "requests>=2.0.0",
     ],
     entry_points={
         "console_scripts": [
