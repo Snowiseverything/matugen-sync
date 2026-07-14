@@ -1,3 +1,3 @@
 @echo off
-set DIR=%~dp0
-python "%DIR%matugen_sync\__main__.py" %*
+cd /d "%~dp0"
+python -m matugen_sync %*
