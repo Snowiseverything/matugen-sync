@@ -92,12 +92,7 @@ def _watch_loop(args, cfg, app_outputs):
             time.sleep(5)
 
 
-def _run_sync(image_path: str, args, cfg, app_outputs):
-    logger.info("Extracting colors from %s", Path(image_path).name)
-    colors = extract_colors(image_path)
-    save_colors_cache(colors)
-    logger.info("Accent: %s", colors["accent"])
-
+def render_and_deploy(colors: dict, args, cfg, app_outputs):
     if not args.no_templates:
         tmpl_dir = Path(cfg.template_dir).expanduser() if cfg.template_dir else TEMPLATE_DIR
         if tmpl_dir.exists():
@@ -121,6 +116,14 @@ def _run_sync(image_path: str, args, cfg, app_outputs):
         govee.set_color(rgb_color, cfg.govee_brightness)
 
 
+def _run_sync(image_path: str, args, cfg, app_outputs):
+    logger.info("Extracting colors from %s", Path(image_path).name)
+    colors = extract_colors(image_path)
+    save_colors_cache(colors)
+    logger.info("Accent: %s", colors["accent"])
+    render_and_deploy(colors, args, cfg, app_outputs)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Matugen Sync for Windows - Material You theme sync")
     parser.add_argument("image", nargs="?", help="Path to wallpaper image")
@@ -135,6 +138,8 @@ def main():
     parser.add_argument("--list-devices", action="store_true", help="List detected OpenRGB devices")
     parser.add_argument("--list-govee", action="store_true", help="Discover Govee devices via Home Assistant")
     parser.add_argument("--setup-openrgb", action="store_true", help="Install OpenRGB 1.0rc3 and create scheduled task (run as admin)")
+    parser.add_argument("--boot", action="store_true", help="Sync current wallpaper (or cached colors) at startup")
+    parser.add_argument("--create-startup-link", action="store_true", help="Add matugen-sync --boot to Windows Startup folder")
 
     args = parser.parse_args()
     setup_logging(args.verbose)
@@ -203,6 +208,29 @@ def main():
                 logger.error("setup_openrgb.bat not found at %s", setup_script)
         except Exception as e:
             logger.info("Manual setup required. Run 'setup_openrgb.bat' as admin.")
+        return
+
+    if args.create_startup_link:
+        startup = Path.home() / "AppData" / "Roaming" / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+        startup.mkdir(parents=True, exist_ok=True)
+        link = startup / "matugen-sync-boot.bat"
+        bat_path = Path(__file__).resolve().parent.parent / "matugen-sync.bat"
+        link.write_text(f'@echo off\nstart /b "" "{bat_path}" --boot\n', encoding="utf-8")
+        logger.info("Created startup link: %s", link)
+        return
+
+    if args.boot:
+        wall = _get_wallpaper_path()
+        if wall and Path(wall).exists():
+            logger.info("Boot sync with current wallpaper: %s", wall)
+            _run_sync(wall, args, cfg, app_outputs)
+        else:
+            colors = load_colors_cache()
+            if colors:
+                logger.info("Boot sync using cached colors")
+                render_and_deploy(colors, args, cfg, app_outputs)
+            else:
+                logger.warning("No cached colors and no wallpaper found. Run matugen-sync <image> first.")
         return
 
     if args.watch:
