@@ -47,6 +47,13 @@ def sync_openrgb(
         cli.disconnect()
         return
 
+    def _set_device_color(sdk_dev, color_rgb, color_hex):
+        # Switch to Direct mode to override Rainbow/Spectrum Cycle
+        if sdk_dev.active_mode != 0:
+            sdk_dev.set_mode(0)
+        sdk_dev.set_color(color_rgb)
+        logger.info("  OpenRGB %s set to %s", sdk_dev.name, color_hex)
+
     if devices:
         for dev_cfg in devices:
             dev_color = accent_hex
@@ -61,18 +68,13 @@ def sync_openrgb(
 
             for sdk_dev in cli.devices:
                 if str(sdk_dev.id) == str(dev_cfg.get("id", "")):
-                    sdk_dev.set_color(dev_color_rgb)
-                    logger.info(
-                        "  OpenRGB device %s set to %s",
-                        sdk_dev.name, dev_color,
-                    )
+                    _set_device_color(sdk_dev, dev_color_rgb, dev_color)
         cli.disconnect()
         return
 
     for dev in cli.devices:
-        dev.set_color(color)
+        _set_device_color(dev, color, accent_hex)
     cli.disconnect()
-    logger.info("  OpenRGB all devices set to %s", accent_hex)
 
 
 def sync_mad68(hex_color: str):
