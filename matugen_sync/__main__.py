@@ -108,7 +108,7 @@ def render_and_deploy(colors: dict, args, cfg, app_outputs):
 
     if not args.no_rgb:
         if cfg.openrgb_enabled:
-            sync_openrgb(rgb_color, cfg.openrgb_devices)
+            sync_openrgb(rgb_color, cfg.openrgb_devices, wait=bool(getattr(args, "boot", False)))
         if cfg.mad68_enabled:
             sync_mad68(rgb_color)
 
@@ -215,7 +215,12 @@ def main():
         startup.mkdir(parents=True, exist_ok=True)
         link = startup / "matugen-sync-boot.bat"
         bat_path = Path(__file__).resolve().parent.parent / "matugen-sync.bat"
-        link.write_text(f'@echo off\nstart /b "" "{bat_path}" --boot\n', encoding="utf-8")
+        link.write_text(
+            '@echo off\r\n'
+            'timeout /t 10 /nobreak >nul\r\n'
+            f'call "{bat_path}" --boot > "%TEMP%\\matugen-sync-boot.log" 2>&1\r\n',
+            encoding="utf-8"
+        )
         logger.info("Created startup link: %s", link)
         return
 

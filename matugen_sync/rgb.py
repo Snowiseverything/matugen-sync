@@ -1,7 +1,30 @@
 import colorsys
 import logging
+import time
 
 logger = logging.getLogger(__name__)
+
+
+def wait_for_openrgb(timeout: float = 30.0, interval: float = 2.0):
+    from openrgb import OpenRGBClient
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            cli = OpenRGBClient()
+            if cli.devices:
+                names = [d.name for d in cli.devices]
+                if any("DRAM" in n or "RAM" in n for n in names):
+                    if any("ASUS" in n or "AURA" in n or "Motherboard" in n or "GAMING" in n for n in names):
+                        cli.disconnect()
+                        return True
+                logger.info("  OpenRGB devices found: %s, waiting for RAM+Mobo...", names)
+            cli.disconnect()
+        except Exception:
+            pass
+        if time.time() - start < timeout:
+            logger.info("  Waiting for OpenRGB server...")
+            time.sleep(interval)
+    return False
 
 
 def _hex_to_rgb_int(hex_color: str) -> tuple[int, int, int]:
@@ -26,12 +49,34 @@ def _adjust_sl(hex_color: str, saturation: float, lightness: float) -> str:
     return "#{:02x}{:02x}{:02x}".format(int(r2 * 255), int(g2 * 255), int(b2 * 255))
 
 
+def _apply_calibration(hex_color: str, cfg: dict) -> str:
+    c = hex_color
+    hue_shift = cfg.get("hue_shift", 0)
+    saturation = cfg.get("saturation", 1.0)
+    lightness = cfg.get("lightness", 0.5)
+    if hue_shift:
+        c = _shift_hue(c, hue_shift)
+    if saturation != 1.0 or lightness != 0.5:
+        c = _adjust_sl(c, saturation, lightness)
+    return c
+
+
+def _colors_match(c1: tuple, c2: tuple) -> bool:
+    return abs(c1[0] - c2[0]) <= 2 and abs(c1[1] - c2[1]) <= 2 and abs(c1[2] - c2[2]) <= 2
+
+
 def sync_openrgb(
     accent_hex: str,
     devices: list[dict] | None = None,
+    wait: bool = False,
 ):
     from openrgb import OpenRGBClient
     from openrgb.utils import RGBColor
+
+    if wait:
+        if not wait_for_openrgb():
+            logger.warning("  OpenRGB server did not become available")
+            return
 
     try:
         cli = OpenRGBClient()
@@ -47,33 +92,48 @@ def sync_openrgb(
         cli.disconnect()
         return
 
-    def _set_device_color(sdk_dev, color_rgb, color_hex):
-        # Switch to Direct mode to override Rainbow/Spectrum Cycle
+    def _set_color_and_verify(sdk_dev, color_rgb, color_hex, zone=None):
         if sdk_dev.active_mode != 0:
             sdk_dev.set_mode(0)
-        sdk_dev.set_color(color_rgb)
-        logger.info("  OpenRGB %s set to %s", sdk_dev.name, color_hex)
+        targets = [zone] if zone else sdk_dev.zones
+        for t in targets:
+            if not t.colors:
+                continue
+            for attempt in range(3):
+                t.set_color(color_rgb)
+                time.sleep(0.1)
+                led = t.colors[0]
+                if _colors_match((led.red, led.green, led.blue), (color_rgb.red, color_rgb.green, color_rgb.blue)):
+                    break
+        label = f"{sdk_dev.name} / {zone.name}" if zone else sdk_dev.name
+        logger.info("  OpenRGB %s set to %s", label, color_hex)
 
     if devices:
         for dev_cfg in devices:
-            dev_color = accent_hex
-            hue_shift = dev_cfg.get("hue_shift", 0)
-            saturation = dev_cfg.get("saturation", 1.0)
-            lightness = dev_cfg.get("lightness", 0.5)
-            if hue_shift:
-                dev_color = _shift_hue(dev_color, hue_shift)
-            if saturation != 1.0 or lightness != 0.5:
-                dev_color = _adjust_sl(dev_color, saturation, lightness)
-            dev_color_rgb = RGBColor(*_hex_to_rgb_int(dev_color))
+            zone_overrides = dev_cfg.pop("zones", {})
 
             for sdk_dev in cli.devices:
-                if str(sdk_dev.id) == str(dev_cfg.get("id", "")):
-                    _set_device_color(sdk_dev, dev_color_rgb, dev_color)
+                if str(sdk_dev.id) != str(dev_cfg.get("id", "")):
+                    continue
+
+                if zone_overrides:
+                    for zone in sdk_dev.zones:
+                        z_cfg = zone_overrides.get(zone.name, {})
+                        base = _apply_calibration(accent_hex, dev_cfg)
+                        z_color = _apply_calibration(base, z_cfg)
+                        z_rgb = RGBColor(*_hex_to_rgb_int(z_color))
+                        _set_color_and_verify(sdk_dev, z_rgb, z_color, zone)
+                else:
+                    dev_color = _apply_calibration(accent_hex, dev_cfg)
+                    dev_color_rgb = RGBColor(*_hex_to_rgb_int(dev_color))
+                    _set_color_and_verify(sdk_dev, dev_color_rgb, dev_color)
+
+            dev_cfg["zones"] = zone_overrides
         cli.disconnect()
         return
 
     for dev in cli.devices:
-        _set_device_color(dev, color, accent_hex)
+        _set_color_and_verify(dev, color, accent_hex)
     cli.disconnect()
 
 
