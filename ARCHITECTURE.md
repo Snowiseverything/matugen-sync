@@ -106,10 +106,10 @@ This is because Windows HID desktop API expects a report ID byte even for device
 
 ## Govee LED — Home Assistant API
 
-Govee's native LAN API is unreliable and lacks brightness control. Instead, we use Home Assistant's REST API running on a Raspberry Pi 4 ("snowpi"):
+Govee's native LAN API is unreliable and lacks brightness control. Instead, we use Home Assistant's REST API running on a local server:
 
 ```
-POST http://snowpi:8123/api/services/light/turn_on
+POST http://ha-server:8123/api/services/light/turn_on
 Authorization: Bearer <token>
 Body: { "entity_id": "light.govee_h6102_2f48", "rgb_color": [R, G, B], "brightness": 204 }
 ```

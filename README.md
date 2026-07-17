@@ -1,41 +1,70 @@
 # matugen-sync
 
-Wallpaper-aware theme & RGB sync. Change wallpaper → everything follows.
+Wallpaper-aware theme & RGB sync for Windows. Change wallpaper — everything follows.
 
-## Windows
+## What It Does
 
-```
-Wallpaper change
-  → matugen-sync --watch (or manual run)
-    → matugen binary generates Material You palette
-      → Jinja2 templates render for each app (Discord, Steam, Brave, etc.)
-      → OpenRGB SDK → motherboard + DDR5 RAM + fans
-      → HID write → MAD68 HE keyboard
-      → Home Assistant API → Govee LED strip
-```
+Change wallpaper → matugen generates Material You palette → syncs to:
+
+| Category | Targets |
+|----------|---------|
+| **RGB Hardware** | OpenRGB motherboard + DDR5 RAM + fans, MAD68 HE keyboard, Govee LEDs |
+| **Discord** | Vencord custom theme |
+| **Spotify** | Spicetify theme |
+| **Steam** | Millennium skin |
+| **Brave** | Custom theme |
+| **Terminal** | Windows Terminal scheme |
+| **Launcher** | Flow Launcher theme |
+| **Code** | OpenCode theme |
 
 ## Quick Start
 
 1. Install `matugen`: `cargo install matugen`
 2. `pip install -r requirements.txt`
 3. `matugen-sync --init`
-4. Edit `~/.config/matugen-sync/config.json` with your app paths
+4. Edit `~/.config/matugen-sync/config.json`
 5. Run `matugen-sync <wallpaper.jpg>`
 
-See [SETUP.md](SETUP.md) for full Windows installation.
+## RGB Setup
 
-## Files
+### OpenRGB (motherboard + RAM + fans)
+
+1. Install OpenRGB 1.0rc3+ (portable to `%LOCALAPPDATA%\OpenRGB\`)
+2. Run `setup_openrgb.bat` as admin — creates a scheduled task that launches OpenRGB server at logon
+3. Run `matugen-sync --list-devices` to detect your hardware
+4. Configure per-device calibration in `config.json` (hue_shift, saturation, lightness)
+
+### MAD68 HE Keyboard
+
+Connects via HID protocol (PID `0x1058`). Must be in Customization mode.
+
+### Govee LEDs
+
+Uses Home Assistant REST API. Configure token and entity IDs in `~/.config/govee-led.json`.
+
+## Boot Sync
+
+Run `matugen-sync --create-startup-link` once — creates a startup script that:
+1. Waits 10s for OpenRGB server to start
+2. Waits up to 30s for all devices to be detected
+3. Syncs all RGB to current wallpaper colors
+4. Exits
+
+## Project Files
 
 ```
-matugen_sync/           # Python package
-  __main__.py           # CLI entry point (--watch, --list-devices, etc.)
-  colors.py             # Calls matugen binary for M3 palette
-  config.py             # Config dataclass (JSON ~/.config/matugen-sync/)
-  rgb.py                # OpenRGB SDK client + MAD68 HID
-  govee.py              # Home Assistant REST client
-  templates.py          # Jinja2 template renderer
-templates/              # Jinja2 templates for each app
-setup_openrgb.bat       # Creates admin scheduled task for OpenRGB server
+matugen_sync/
+  __main__.py       CLI entry point
+  colors.py         Calls matugen binary for M3 palette
+  config.py         Config dataclass
+  rgb.py            OpenRGB SDK + MAD68 HID
+  govee.py          Home Assistant REST client
+  templates.py      Jinja2 template renderer
+templates/          Jinja2 templates
+setup_openrgb.bat   Admin scheduled task for OpenRGB server
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details on Windows workarounds.
+## Docs
+
+- [SETUP.md](SETUP.md) — Full Windows installation guide
+- [ARCHITECTURE.md](ARCHITECTURE.md) — Technical design decisions
