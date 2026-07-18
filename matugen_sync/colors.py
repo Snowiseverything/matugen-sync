@@ -77,10 +77,17 @@ def extract_colors(image_path: str | Path, fast: bool = False) -> dict[str, str]
     return d
 
 
+def _tone(hex_color: str, lightness: float) -> str:
+    import colorsys
+    r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
+    h, _, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+    r2, g2, b2 = colorsys.hls_to_rgb(h, lightness, s)
+    return "#{:02x}{:02x}{:02x}".format(int(r2 * 255), int(g2 * 255), int(b2 * 255))
+
+
 def _extract_colors_fast(image_path: str | Path) -> dict[str, str]:
     try:
         from PIL import Image
-        import colorsys
     except ImportError:
         return extract_colors(image_path, fast=False)
 
@@ -94,12 +101,31 @@ def _extract_colors_fast(image_path: str | Path) -> dict[str, str]:
     d: dict[str, str] = {"source": accent, "accent": accent}
 
     for key in _COLOR_KEYS:
-        d[key] = accent
-    d["background"] = "#19120c"
-    d["on_background"] = "#efe0d5"
-    d["surface"] = "#19120c"
-    d["on_surface"] = "#efe0d5"
-    d["surface_variant"] = "#51453a"
-    d["surface_container"] = "#261e18"
+        if key in ("background", "surface", "surface_dim",
+                    "surface_container", "surface_container_lowest",
+                    "surface_container_low", "surface_container_high",
+                    "surface_container_highest", "surface_variant",
+                    "shadow", "scrim", "outline", "outline_variant"):
+            d[key] = "#19120c" if "container" in key else "#1a1a1a"
+        elif key.startswith("on_"):
+            d[key] = "#e0e0e0"
+        elif key.startswith("primary"):
+            d[key] = accent
+        elif key.startswith("secondary"):
+            d[key] = _tone(accent, 0.55)
+        elif key.startswith("tertiary"):
+            d[key] = _tone(accent, 0.45)
+        elif key in ("error", "error_container"):
+            d[key] = "#ba1a1a" if key == "error" else "#93000a"
+        elif key in ("on_error", "on_error_container"):
+            d[key] = "#ffffff" if key == "on_error" else "#ffdad6"
+        elif key in ("inverse_surface", "inverse_on_surface", "inverse_primary"):
+            d[key] = {"inverse_surface": "#e0e0e0",
+                       "inverse_on_surface": "#1a1a1a",
+                       "inverse_primary": accent}.get(key, accent)
+        elif key == "surface_tint":
+            d[key] = accent
+        else:
+            d[key] = accent
 
     return d
