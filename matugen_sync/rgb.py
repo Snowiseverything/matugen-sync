@@ -54,10 +54,17 @@ def _apply_calibration(hex_color: str, cfg: dict) -> str:
     hue_shift = cfg.get("hue_shift", 0)
     saturation = cfg.get("saturation", 1.0)
     lightness = cfg.get("lightness", 0.5)
+    brightness = cfg.get("brightness", 1.0)
     if hue_shift:
         c = _shift_hue(c, hue_shift)
     if saturation != 1.0 or lightness != 0.5:
         c = _adjust_sl(c, saturation, lightness)
+    if brightness != 1.0:
+        r, g, b = _hex_to_rgb_int(c)
+        r = min(255, int(r * brightness))
+        g = min(255, int(g * brightness))
+        b = min(255, int(b * brightness))
+        c = "#{:02x}{:02x}{:02x}".format(r, g, b)
     return c
 
 

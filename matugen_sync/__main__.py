@@ -225,17 +225,17 @@ def main():
         return
 
     if args.boot:
+        colors = load_colors_cache()
+        if colors:
+            logger.info("Boot sync using cached colors")
+            render_and_deploy(colors, args, cfg, app_outputs)
+            return
         wall = _get_wallpaper_path()
         if wall and Path(wall).exists():
-            logger.info("Boot sync with current wallpaper: %s", wall)
+            logger.info("No cache — extracting from wallpaper")
             _run_sync(wall, args, cfg, app_outputs)
         else:
-            colors = load_colors_cache()
-            if colors:
-                logger.info("Boot sync using cached colors")
-                render_and_deploy(colors, args, cfg, app_outputs)
-            else:
-                logger.warning("No cached colors and no wallpaper found. Run matugen-sync <image> first.")
+            logger.warning("No cached colors and no wallpaper found. Run matugen-sync <image> first.")
         return
 
     if args.watch:
