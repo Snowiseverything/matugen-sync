@@ -138,7 +138,7 @@ def main():
     parser.add_argument("--list-devices", action="store_true", help="List detected OpenRGB devices")
     parser.add_argument("--list-govee", action="store_true", help="Discover Govee devices via Home Assistant")
     parser.add_argument("--setup-openrgb", action="store_true", help="Install OpenRGB 1.0rc3 and create scheduled task (run as admin)")
-    parser.add_argument("--fast", action="store_true", help="Fast color extraction (Pillow, ~100ms, no matugen binary)")
+    parser.add_argument("--async", action="store_true", dest="async_sync", help="Sync immediately from cache, then run matugen in background for proper colors")
     parser.add_argument("--boot", action="store_true", help="Sync current wallpaper (or cached colors) at startup")
     parser.add_argument("--create-startup-link", action="store_true", help="Add matugen-sync --boot to Windows Startup folder")
 
@@ -252,8 +252,24 @@ def main():
         logger.error("Image not found: %s", image_path)
         sys.exit(1)
 
-    _run_sync(str(image_path), args, cfg, app_outputs)
-    logger.info("Done!")
+    if args.async_sync:
+        colors = load_colors_cache()
+        if colors:
+            logger.info("Immediate sync from cache")
+            render_and_deploy(colors, args, cfg, app_outputs)
+        else:
+            logger.info("No cache — running matugen directly")
+            _run_sync(str(image_path), args, cfg, app_outputs)
+        logger.info("Running matugen in background for proper M3 colors...")
+        import subprocess, sys as _sys
+        subprocess.Popen(
+            [_sys.executable, "-m", "matugen_sync", str(image_path)],
+            cwd=Path(__file__).resolve().parent.parent,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+    else:
+        _run_sync(str(image_path), args, cfg, app_outputs)
+        logger.info("Done!")
 
 
 def install_templates():
