@@ -35,7 +35,9 @@ def _find_matugen() -> str:
     )
 
 
-def extract_colors(image_path: str | Path) -> dict[str, str]:
+def extract_colors(image_path: str | Path, fast: bool = False) -> dict[str, str]:
+    if fast:
+        return _extract_colors_fast(image_path)
     matugen = _find_matugen()
     image_path = str(Path(image_path).resolve())
 
@@ -71,5 +73,33 @@ def extract_colors(image_path: str | Path) -> dict[str, str]:
     if "on_surface" in d:
         d["on_background"] = d["on_surface"]
         d["light_on_background"] = d.get("light_on_surface", d["on_surface"])
+
+    return d
+
+
+def _extract_colors_fast(image_path: str | Path) -> dict[str, str]:
+    try:
+        from PIL import Image
+        import colorsys
+    except ImportError:
+        return extract_colors(image_path, fast=False)
+
+    img = Image.open(str(image_path)).convert("RGB").resize((64, 64))
+    pixels = list(img.getdata())
+    r = sum(p[0] for p in pixels) // len(pixels)
+    g = sum(p[1] for p in pixels) // len(pixels)
+    b = sum(p[2] for p in pixels) // len(pixels)
+
+    accent = "#{:02x}{:02x}{:02x}".format(r, g, b)
+    d: dict[str, str] = {"source": accent, "accent": accent}
+
+    for key in _COLOR_KEYS:
+        d[key] = accent
+    d["background"] = "#19120c"
+    d["on_background"] = "#efe0d5"
+    d["surface"] = "#19120c"
+    d["on_surface"] = "#efe0d5"
+    d["surface_variant"] = "#51453a"
+    d["surface_container"] = "#261e18"
 
     return d

@@ -118,7 +118,7 @@ def render_and_deploy(colors: dict, args, cfg, app_outputs):
 
 def _run_sync(image_path: str, args, cfg, app_outputs):
     logger.info("Extracting colors from %s", Path(image_path).name)
-    colors = extract_colors(image_path)
+    colors = extract_colors(image_path, fast=getattr(args, "fast", False))
     save_colors_cache(colors)
     logger.info("Accent: %s", colors["accent"])
     render_and_deploy(colors, args, cfg, app_outputs)
@@ -138,6 +138,7 @@ def main():
     parser.add_argument("--list-devices", action="store_true", help="List detected OpenRGB devices")
     parser.add_argument("--list-govee", action="store_true", help="Discover Govee devices via Home Assistant")
     parser.add_argument("--setup-openrgb", action="store_true", help="Install OpenRGB 1.0rc3 and create scheduled task (run as admin)")
+    parser.add_argument("--fast", action="store_true", help="Fast color extraction (Pillow, ~100ms, no matugen binary)")
     parser.add_argument("--boot", action="store_true", help="Sync current wallpaper (or cached colors) at startup")
     parser.add_argument("--create-startup-link", action="store_true", help="Add matugen-sync --boot to Windows Startup folder")
 
