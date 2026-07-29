@@ -61,7 +61,7 @@ Create `~/.config/govee-led.json`:
 
 ```json
 {
-  "ha_url": "http://100.83.33.67:8123",
+  "ha_url": "http://<tailscale-ip>:8123",
   "ha_token": "your-long-lived-token",
   "entities": ["light.govee_h6102_2f48"]
 }

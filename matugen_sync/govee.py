@@ -10,7 +10,7 @@ CONFIG_PATH = Path.home() / ".config" / "govee-led.json"
 
 def _load_config() -> dict:
     default = {
-        "ha_url": "http://100.83.33.67:8123",
+        "ha_url": "http://<tailscale-ip>:8123",
         "ha_token": "",
         "entities": ["light.govee_h6102_2f48"],
     }
